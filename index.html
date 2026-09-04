@@ -3,210 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>eFootball Mini - Penalti Yarışı</title>
+    <title>eFootball Mini</title>
     <style>
         body {
             margin: 0;
             background: #111;
+            color: #fff;
             text-align: center;
-            font-family: Arial, sans-serif;
-            color: white;
-            user-select: none;
+            font-family: sans-serif;
         }
         #gameCanvas {
             background: #2e7d32;
-            border: 4px solid #fff;
+            border: 3px solid #fff;
             display: block;
             margin: 10px auto;
-            border-radius: 8px;
-            box-shadow: 0 0 25px rgba(0,0,0,0.7);
         }
-        .dashboard {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
+        .info {
             font-size: 18px;
             font-weight: bold;
-            margin: 10px 0;
-        }
-        .dash-box {
-            background: #222;
-            padding: 8px 18px;
-            border-radius: 8px;
-            border: 1px solid #444;
-        }
-        #restartBtn {
-            padding: 10px 24px;
-            font-size: 16px;
-            background: #28a745;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            display: none;
-            margin: 10px auto;
-            font-weight: bold;
+            margin: 10px;
         }
     </style>
 </head>
 <body>
 
-    <h2 style="margin: 5px; color: #ffeb3b;">⚽ eFootball Penalty Strike ⚽</h2>
+    <h2>⚽ eFootball Penalti ⚽</h2>
+    <div class="info">Qol: <span id="score" style="color:#00ff00;">0</span> | Seyv: <span id="saved" style="color:#ff3333;">0</span></div>
 
-    <div class="dashboard">
-        <div class="dash-box">Qol: <span id="score" style="color: #00ff00;">0</span></div>
-        <div class="dash-box">Qapıçı Dəf Etmişdir: <span id="saved" style="color: #ff3333;">0</span></div>
-    </div>
-
-    <canvas id="gameCanvas" width="380" height="480"></canvas>
-
-    <button id="restartBtn" onclick="resetGame()">Yenidən Başla 🔄</button>
-    <p style="font-size: 14px; color: #aaa;">Meydançaya və ya qapıya tərəf **mıçka ilə kliklə** və ya **ekrana toxunaraq** zərbə vur!</p>
+    <canvas id="gameCanvas" width="360" height="460"></canvas>
+    <p>Zərbə vurmaq üçün qapıya tərəf kliklə və ya ekrana toxun!</p>
 
     <script>
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
-        const restartBtn = document.getElementById("restartBtn");
+        var canvas = document.getElementById("gameCanvas");
+        var ctx = canvas.getContext("2d");
 
-        let ball, keeper, score, savedCount, isMoving, message;
-
-        function init() {
-            ball = { x: 190, y: 400, r: 12, vx: 0, vy: 0 };
-            keeper = { x: 160, y: 110, w: 60, h: 20, vx: 2.5 };
-            score = 0;
-            savedCount = 0;
-            isMoving = false;
-            message = "Zərbə vurmaq üçün kliklə!";
-
-            document.getElementById("score").innerText = score;
-            document.getElementById("saved").innerText = savedCount;
-            restartBtn.style.display = "none";
-        }
+        var ball = { x: 180, y: 390, r: 10, vx: 0, vy: 0 };
+        var keeper = { x: 150, y: 90, w: 60, h: 18, vx: 2 };
+        var score = 0;
+        var saved = 0;
+        var isMoving = false;
+        var msg = "Zərbə vur!";
 
         canvas.addEventListener("click", function(e) {
             if (isMoving) return;
-
-            const rect = canvas.getBoundingClientRect();
-            const clickX = e.clientX - rect.left;
-            const clickY = e.clientY - rect.top;
+            var rect = canvas.getBoundingClientRect();
+            var clickX = e.clientX - rect.left;
+            var clickY = e.clientY - rect.top;
 
             if (clickY < ball.y) {
-                let dx = clickX - ball.x;
-                let dy = clickY - ball.y;
-                let angle = Math.atan2(dy, dx);
-
-                ball.vx = Math.cos(angle) * 10;
-                ball.vy = Math.sin(angle) * 10;
+                var dx = clickX - ball.x;
+                var dy = clickY - ball.y;
+                var angle = Math.atan2(dy, dx);
+                ball.vx = Math.cos(angle) * 9;
+                ball.vy = Math.sin(angle) * 9;
                 isMoving = true;
-                message = "";
+                msg = "";
             }
         });
 
         function update() {
-            // Qapıçının hərəkəti
             if (!isMoving) {
                 keeper.x += keeper.vx;
-                if (keeper.x <= 70 || keeper.x + keeper.w >= 310) {
-                    keeper.vx *= -1;
-                }
-            }
-
-            // Topun hərəkəti
-            if (isMoving) {
+                if (keeper.x <= 60 || keeper.x + keeper.w >= 300) keeper.vx *= -1;
+            } else {
                 ball.x += ball.vx;
                 ball.y += ball.vy;
 
                 // Qapıçı tutdu
-                if (
-                    ball.x > keeper.x &&
-                    ball.x < keeper.x + keeper.w &&
-                    ball.y - ball.r <= keeper.y + keeper.h &&
-                    ball.y + ball.r >= keeper.y
-                ) {
-                    savedCount++;
-                    document.getElementById("saved").innerText = savedCount;
-                    message = "🚫 QAPICI SEYV ETDİ!";
-                    resetBall();
+                if (ball.x > keeper.x && ball.x < keeper.x + keeper.w && ball.y - ball.r <= keeper.y + keeper.h && ball.y + ball.r >= keeper.y) {
+                    saved++;
+                    document.getElementById("saved").innerText = saved;
+                    msg = "QAPICI TUTDU!";
+                    reset();
                 }
-                // Qol oldu
-                else if (ball.y <= 100 && ball.x >= 70 && ball.x <= 310) {
-                    score += 1;
+                // Qol
+                else if (ball.y <= 80 && ball.x >= 60 && ball.x <= 300) {
+                    score++;
                     document.getElementById("score").innerText = score;
-                    message = "⚽ QOOOL!!!";
-                    resetBall();
+                    msg = "QOOOL!";
+                    reset();
                 }
                 // Aut
-                else if (ball.y < 40 || ball.x < 20 || ball.x > 360) {
-                    message = "❌ AWT!";
-                    resetBall();
+                else if (ball.y < 30 || ball.x < 10 || ball.x > 350) {
+                    msg = "AUT!";
+                    reset();
                 }
             }
         }
 
-        function resetBall() {
+        function reset() {
             isMoving = false;
-            setTimeout(() => {
-                ball.x = 190;
-                ball.y = 400;
+            setTimeout(function() {
+                ball.x = 180;
+                ball.y = 390;
                 ball.vx = 0;
                 ball.vy = 0;
-                message = "Yenidən zərbə vur!";
-            }, 1200);
+                msg = "Zərbə vur!";
+            }, 1000);
         }
 
         function draw() {
-            // Yaşıl Ot
+            // Meydança
             ctx.fillStyle = "#2e7d32";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Cərimə xətti
-            ctx.strokeStyle = "#ffffff";
+            // Qapı
+            ctx.strokeStyle = "#fff";
             ctx.lineWidth = 3;
-            ctx.strokeRect(50, 40, 280, 130);
-
-            // Qapı Toru
-            ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
-            ctx.fillRect(70, 50, 240, 50);
-            ctx.strokeRect(70, 50, 240, 50);
-
-            // Qapı Direkləri
-            ctx.fillStyle = "#ffffff";
-            ctx.fillRect(65, 45, 8, 60);  // Sol dirək
-            ctx.fillRect(307, 45, 8, 60); // Sağ dirək
-            ctx.fillRect(65, 45, 250, 8); // Tir
+            ctx.strokeRect(60, 40, 240, 45);
 
             // Qapıçı
             ctx.fillStyle = "#ff5722";
             ctx.fillRect(keeper.x, keeper.y, keeper.w, keeper.h);
-            ctx.fillStyle = "#ffffff";
-            ctx.font = "bold 11px Arial";
-            ctx.fillText("QAPICI", keeper.x + 8, keeper.y + 14);
 
             // Top
             ctx.beginPath();
             ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
-            ctx.fillStyle = "#ffffff";
+            ctx.fillStyle = "#fff";
             ctx.fill();
-            ctx.strokeStyle = "#000000";
-            ctx.lineWidth = 2;
+            ctx.strokeStyle = "#000";
             ctx.stroke();
 
-            // Bildiriş
-            if (message) {
+            // Mətn
+            if (msg) {
                 ctx.fillStyle = "#ffeb3b";
                 ctx.font = "bold 20px Arial";
-                ctx.fillText(message, 80, 280);
+                ctx.fillText(msg, 120, 250);
             }
         }
 
-        function gameLoop() {
+        function loop() {
             update();
             draw();
-            requestAnimationFrame(gameLoop);
+            requestAnimationFrame(loop);
         }
 
-        init();
-        gameLoop();
+        loop();
     </script>
 </body>
 </html>
