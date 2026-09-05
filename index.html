@@ -3,349 +3,340 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>eFootball 2D Match</title>
+    <title>Pro Penalty & Free Kick Master</title>
     <style>
+        * { box-sizing: border-box; }
         body {
             margin: 0;
-            background: #0b0e14;
+            background: #0f172a;
             color: #fff;
-            font-family: 'Segoe UI', Tahoma, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             text-align: center;
             user-select: none;
+            overflow: hidden;
         }
-        #setupMenu {
-            margin: 30px auto;
-            padding: 20px;
-            background: #161b22;
-            width: 320px;
-            border-radius: 12px;
-            border: 1px solid #30363d;
-        }
-        select, button {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 6px;
-            border: none;
-            font-size: 16px;
+        header {
+            background: #1e293b;
+            padding: 12px;
+            font-size: 20px;
             font-weight: bold;
-        }
-        select { background: #21262d; color: #fff; }
-        button { background: #238636; color: #fff; cursor: pointer; }
-        #gameUI { display: none; }
-        #canvasContainer { position: relative; display: inline-block; margin: 10px auto; }
-        canvas {
-            border: 4px solid #fff;
-            border-radius: 8px;
-            box-shadow: 0 0 25px rgba(0,0,0,0.9);
-        }
-        .scoreboard {
+            border-bottom: 2px solid #334155;
             display: flex;
             justify-content: space-around;
             align-items: center;
-            font-size: 20px;
-            font-weight: bold;
-            background: #161b22;
-            padding: 10px;
-            width: 780px;
-            margin: 0 auto 10px auto;
-            border-radius: 8px;
-            border: 1px solid #30363d;
         }
-        .controls-ui {
-            margin-top: 10px;
-            display: flex;
-            justify-content: center;
-            gap: 15px;
+        #gameContainer {
+            position: relative;
+            width: 800px;
+            height: 500px;
+            margin: 15px auto;
         }
-        .action-btn {
-            padding: 12px 30px;
-            font-size: 18px;
-            border-radius: 8px;
+        canvas {
+            background: #15803d;
+            border: 4px solid #fff;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            cursor: crosshair;
+        }
+        .power-bar-container {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 20px;
+            background: #334155;
+            border: 2px solid #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            display: none;
+        }
+        .power-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #22c55e, #eab308, #ef4444);
+        }
+        .instruction {
+            margin-top: 5px;
+            color: #94a3b8;
+            font-size: 15px;
+        }
+        .btn-reset {
+            background: #22c55e;
+            color: #fff;
             border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
-            color: white;
-            width: auto;
         }
-        .btn-pass { background: #0288d1; }
-        .btn-shoot { background: #d32f2f; }
+        .btn-reset:hover { background: #16a34a; }
     </style>
 </head>
 <body>
 
-    <div id="setupMenu">
-        <h2>⚽ eFootball Stadium</h2>
-        <label>Sənin Komandan:</label>
-        <select id="homeSelect">
-            <option value="Liverpool" data-color="#d32f2f">Liverpool FC</option>
-            <option value="Real Madrid" data-color="#ffffff" data-num="#000">Real Madrid</option>
-            <option value="Man City" data-color="#0288d1">Manchester City</option>
-            <option value="Arsenal" data-color="#e53935">Arsenal</option>
-        </select>
+    <header>
+        <div>⚽ HESAB: <span id="scoreText" style="color: #4ade80;">0</span></div>
+        <div>🏆 PRO PENALTY 3D-STYLE</div>
+        <div>🧤 SEYV: <span id="savedText" style="color: #f87171;">0</span></div>
+        <button class="btn-reset" onclick="resetGame()">Yenidən Başla 🔄</button>
+    </header>
 
-        <label>Rəqib Komanda:</label>
-        <select id="awaySelect">
-            <option value="Real Madrid" data-color="#ffffff" data-num="#000">Real Madrid</option>
-            <option value="Liverpool" data-color="#d32f2f">Liverpool FC</option>
-            <option value="Man City" data-color="#0288d1">Manchester City</option>
-            <option value="Arsenal" data-color="#e53935">Arsenal</option>
-        </select>
-
-        <button onclick="startGame()">Matça Başla 🚀</button>
+    <div id="gameContainer">
+        <canvas id="pitch" width="800" height="500"></canvas>
+        <div class="power-bar-container" id="powerContainer">
+            <div class="power-bar" id="powerBar"></div>
+        </div>
     </div>
 
-    <div id="gameUI">
-        <div class="scoreboard">
-            <span id="homeName" style="color: #ff5252;">HOME</span>
-            <span id="scoreText" style="font-size: 26px; color: #ffeb3b;">0 - 0</span>
-            <span id="awayName" style="color: #448aff;">AWAY</span>
-            <span>⏱️ <span id="timeText">00:00</span></span>
-        </div>
-
-        <div id="canvasContainer">
-            <canvas id="pitch" width="800" height="500"></canvas>
-        </div>
-
-        <div class="controls-ui">
-            <button class="action-btn btn-pass" onclick="doPass()">🅰️ PAS (SPACE)</button>
-            <button class="action-btn btn-shoot" onclick="doShoot()">🚀 ŞUT (ENTER)</button>
-        </div>
-        <p style="color: #aaa; font-size: 14px; margin-top: 5px;">Hərəkət: **W, A, S, D** və ya **Yön Oxları**</p>
-    </div>
+    <p class="instruction">💡 **Oynamaq qaydası:** Qapıda vurmaq istədiyin yeri **KILIKLƏ** (və ya ekrana toxun), sonra **SPACE (Probel)** basıb saxlayaraq gücü seç və burax!</p>
 
     <script>
         const canvas = document.getElementById("pitch");
         const ctx = canvas.getContext("2d");
 
-        let homeTeam, awayTeam, players = [], ball, matchTimer, seconds = 0;
-        let homeScore = 0, awayScore = 0, isPlaying = false;
-        let keys = {};
+        let score = 0, saved = 0;
+        let targetX = 400, targetY = 150;
+        let isAiming = false;
+        let isPowering = false;
+        let power = 0;
+        let powerInterval;
 
-        window.addEventListener("keydown", e => keys[e.code] = true);
-        window.addEventListener("keyup", e => keys[e.code] = false);
+        // Top Obyekti (Böyük və aydın)
+        let ball = {
+            x: 400, y: 400,
+            targetX: 400, targetY: 150,
+            radius: 18,
+            isMoving: false,
+            scale: 1,
+            speed: 0
+        };
 
-        function startGame() {
-            const hSel = document.getElementById("homeSelect");
-            const aSel = document.getElementById("awaySelect");
+        // Qapıçı
+        let keeper = {
+            x: 360, y: 130,
+            w: 80, h: 25,
+            vx: 3,
+            targetX: 360
+        };
 
-            homeTeam = { name: hSel.value, color: hSel.options[hSel.selectedIndex].dataset.color };
-            awayTeam = { name: aSel.value, color: aSel.options[aSel.selectedIndex].dataset.color };
+        // Qapı Ölçüləri
+        const goal = { x: 200, y: 60, w: 400, h: 140 };
 
-            document.getElementById("homeName").innerText = homeTeam.name;
-            document.getElementById("awayName").innerText = awayTeam.name;
-            document.getElementById("setupMenu").style.display = "none";
-            document.getElementById("gameUI").style.display = "block";
-
-            initMatch();
-            isPlaying = true;
-            matchTimer = setInterval(updateTimer, 1000);
-            requestAnimationFrame(gameLoop);
-        }
-
-        function initMatch() {
-            ball = { x: 400, y: 250, vx: 0, vy: 0, r: 8, angle: 0 };
-            players = [];
-
-            const homePositions = [
-                {x: 40, y: 250, num: 1, gk: true},
-                {x: 140, y: 80, num: 2}, {x: 130, y: 190, num: 4}, {x: 130, y: 310, num: 5}, {x: 140, y: 420, num: 3},
-                {x: 260, y: 140, num: 8}, {x: 240, y: 250, num: 6}, {x: 260, y: 360, num: 10},
-                {x: 370, y: 110, num: 11}, {x: 380, y: 250, num: 9}, {x: 370, y: 390, num: 7}
-            ];
-
-            const awayPositions = [
-                {x: 760, y: 250, num: 1, gk: true},
-                {x: 660, y: 80, num: 2}, {x: 670, y: 190, num: 4}, {x: 670, y: 310, num: 5}, {x: 660, y: 420, num: 3},
-                {x: 540, y: 140, num: 8}, {x: 560, y: 250, num: 6}, {x: 540, y: 360, num: 10},
-                {x: 430, y: 110, num: 11}, {x: 420, y: 250, num: 9}, {x: 430, y: 390, num: 7}
-            ];
-
-            homePositions.forEach((pos, i) => {
-                players.push({
-                    x: pos.x, y: pos.y, num: pos.num, team: 'home',
-                    color: pos.gk ? '#ff9800' : homeTeam.color,
-                    isPlayer: i === 9, radius: 12, speed: 2.8
-                });
-            });
-
-            awayPositions.forEach((pos) => {
-                players.push({
-                    x: pos.x, y: pos.y, num: pos.num, team: 'away',
-                    color: pos.gk ? '#9c27b0' : awayTeam.color,
-                    isPlayer: false, radius: 12, speed: 2.2
-                });
-            });
-        }
-
-        function updateTimer() {
-            seconds += 2;
-            let m = Math.floor(seconds / 60);
-            let s = seconds % 60;
-            document.getElementById("timeText").innerText = `${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
-            if (seconds >= 5400) { clearInterval(matchTimer); isPlaying = false; alert("MATÇ BİTDİ!"); }
-        }
-
-        function doShoot() {
-            let p = players.find(p => p.isPlayer);
-            if (p && Math.hypot(p.x - ball.x, p.y - ball.y) < 25) {
-                ball.vx = 11;
-                ball.vy = (Math.random() - 0.5) * 4;
+        canvas.addEventListener("click", (e) => {
+            if (ball.isMoving) return;
+            const rect = canvas.getBoundingClientRect();
+            targetX = e.clientX - rect.left;
+            targetY = e.clientY - rect.top;
+            
+            // Yalnız qapı ərazisinə nişan almağa icazə ver
+            if (targetY < 250) {
+                isAiming = true;
+                document.getElementById("powerContainer").style.display = "block";
             }
-        }
+        });
 
-        function doPass() {
-            let p = players.find(p => p.isPlayer);
-            if (p && Math.hypot(p.x - ball.x, p.y - ball.y) < 25) {
-                ball.vx = 6;
-                ball.vy = (Math.random() - 0.5) * 2;
+        window.addEventListener("keydown", (e) => {
+            if (e.code === "Space" && isAiming && !isPowering && !ball.isMoving) {
+                isPowering = true;
+                power = 0;
+                powerInterval = setInterval(() => {
+                    power += 4;
+                    if (power > 100) power = 100;
+                    document.getElementById("powerBar").style.width = power + "%";
+                }, 20);
             }
+        });
+
+        window.addEventListener("keyup", (e) => {
+            if (e.code === "Space" && isPowering) {
+                clearInterval(powerInterval);
+                isPowering = false;
+                shootBall();
+            }
+        });
+
+        function shootBall() {
+            ball.isMoving = true;
+            ball.targetX = targetX;
+            ball.targetY = targetY;
+            ball.speed = 0.05 + (power / 2000);
+
+            // Qapıçının tullanacağı tərəf (Süni İntellekt)
+            let jumpDirections = [targetX, targetX + (Math.random() * 100 - 50), 400];
+            keeper.targetX = jumpDirections[Math.floor(Math.random() * jumpDirections.length)] - keeper.w / 2;
         }
 
         function update() {
-            if (!isPlaying) return;
+            // Qapıçı Hərəkəti
+            if (!ball.isMoving) {
+                keeper.x += keeper.vx;
+                if (keeper.x < 220 || keeper.x + keeper.w > 580) keeper.vx *= -1;
+            } else {
+                // Qapıçının şuta reaksiyası
+                keeper.x += (keeper.targetX - keeper.x) * 0.1;
 
-            let p1 = players.find(p => p.isPlayer);
-            if (p1) {
-                if ((keys["KeyW"] || keys["ArrowUp"]) && p1.y > 15) p1.y -= p1.speed;
-                if ((keys["KeyS"] || keys["ArrowDown"]) && p1.y < canvas.height - 15) p1.y += p1.speed;
-                if ((keys["KeyA"] || keys["ArrowLeft"]) && p1.x > 15) p1.x -= p1.speed;
-                if ((keys["KeyD"] || keys["ArrowRight"]) && p1.x < canvas.width - 15) p1.x += p1.speed;
+                // Topun Uçuşu (Perspective 3D Effect)
+                ball.x += (ball.targetX - ball.x) * 0.08;
+                ball.y += (ball.targetY - ball.y) * 0.08;
+                ball.scale -= 0.012; // Uzaqlaşdıqca kiçilmə effekti
+                if (ball.scale < 0.5) ball.scale = 0.5;
 
-                if (keys["Enter"]) doShoot();
-                if (keys["Space"]) doPass();
-
-                let dist = Math.hypot(p1.x - ball.x, p1.y - ball.y);
-                if (dist < p1.radius + ball.r) {
-                    ball.x = p1.x + 10;
-                    ball.y = p1.y;
+                // Zərbənin Sonu və Nəticə Yoxlanışı
+                if (Math.abs(ball.y - ball.targetY) < 5) {
+                    checkGoal();
                 }
             }
+        }
 
-            ball.x += ball.vx;
-            ball.y += ball.vy;
-            ball.vx *= 0.95;
-            ball.vy *= 0.95;
-            ball.angle += Math.hypot(ball.vx, ball.vy) * 0.1;
+        function checkGoal() {
+            ball.isMoving = false;
+            
+            // Qapıçı tutdumu?
+            let savedByGK = (ball.x >= keeper.x && ball.x <= keeper.x + keeper.w && ball.y >= keeper.y && ball.y <= keeper.y + keeper.h);
 
-            // QOL SAĞ
-            if (ball.x >= 785 && ball.y >= 180 && ball.y <= 320) {
-                homeScore++;
-                document.getElementById("scoreText").innerText = `${homeScore} - ${awayScore}`;
-                resetBall();
+            // Qapıya daxil oldumu?
+            let inGoal = (ball.x >= goal.x && ball.x <= goal.x + goal.w && ball.y >= goal.y && ball.y <= goal.y + goal.h);
+
+            if (savedByGK) {
+                saved++;
+                document.getElementById("savedText").innerText = saved;
+                alert("🧤 QAPICI SEYV ETDİ!");
+            } else if (inGoal) {
+                score++;
+                document.getElementById("scoreText").innerText = score;
+                alert("⚽ QOOOOOLLLL!");
+            } else {
+                alert("❌ AUT! Zərbə dəqiq olmadı.");
             }
-            // QOL SOL
-            if (ball.x <= 15 && ball.y >= 180 && ball.y <= 320) {
-                awayScore++;
-                document.getElementById("scoreText").innerText = `${homeScore} - ${awayScore}`;
-                resetBall();
-            }
+
+            resetBall();
         }
 
         function resetBall() {
-            ball.x = 400; ball.y = 250; ball.vx = 0; ball.vy = 0;
+            ball.x = 400;
+            ball.y = 400;
+            ball.scale = 1;
+            isAiming = false;
+            document.getElementById("powerContainer").style.display = "none";
+            document.getElementById("powerBar").style.width = "0%";
+            keeper.x = 360;
+        }
+
+        function resetGame() {
+            score = 0;
+            saved = 0;
+            document.getElementById("scoreText").innerText = 0;
+            document.getElementById("savedText").innerText = 0;
+            resetBall();
         }
 
         function drawPitch() {
-            // Ot zolaqları
-            for (let i = 0; i < 10; i++) {
-                ctx.fillStyle = (i % 2 === 0) ? "#2e7d32" : "#28722c";
-                ctx.fillRect(i * 80, 0, 80, canvas.height);
+            // Ot Örtüyü (3D Hissiyyatlı Zolaqlar)
+            ctx.fillStyle = "#15803d";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < 5; i++) {
+                ctx.fillStyle = (i % 2 === 0) ? "#166534" : "#15803d";
+                ctx.fillRect(0, 200 + (i * 60), canvas.width, 60);
             }
 
-            // Xətlər
-            ctx.strokeStyle = "rgba(255,255,255,0.8)";
-            ctx.lineWidth = 3;
-            ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+            // Tribuna Bələdçisi (Arxa Fon)
+            ctx.fillStyle = "#1e293b";
+            ctx.fillRect(0, 0, canvas.width, goal.y);
 
-            // Mərkəz
+            // Qapı Toru və Direklər
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 6;
+            ctx.strokeRect(goal.x, goal.y, goal.w, goal.h);
+
+            // Tor Naxışları
+            ctx.strokeStyle = "rgba(255,255,255,0.15)";
+            ctx.lineWidth = 1;
+            for (let x = goal.x; x <= goal.x + goal.w; x += 20) {
+                ctx.beginPath(); ctx.moveTo(x, goal.y); ctx.lineTo(x, goal.y + goal.h); ctx.stroke();
+            }
+            for (let y = goal.y; y <= goal.y + goal.h; y += 20) {
+                ctx.beginPath(); ctx.moveTo(goal.x, y); ctx.lineTo(goal.x + goal.w, y); ctx.stroke();
+            }
+
+            // Penalti Nöqtəsi
             ctx.beginPath();
-            ctx.arc(400, 250, 65, 0, Math.PI * 2);
-            ctx.moveTo(400, 10); ctx.lineTo(400, 490);
-            ctx.stroke();
+            ctx.arc(400, 400, 5, 0, Math.PI * 2);
+            ctx.fillStyle = "#fff";
+            ctx.fill();
 
-            // Cərimə sahələri
-            ctx.strokeRect(10, 120, 110, 260);
-            ctx.strokeRect(680, 120, 110, 260);
+            // Nişan Alınan Yer (Hədəf Xaçı)
+            if (isAiming && !ball.isMoving) {
+                ctx.strokeStyle = "#ef4444";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(targetX, targetY, 12, 0, Math.PI * 2);
+                ctx.moveTo(targetX - 18, targetY); ctx.lineTo(targetX + 18, targetY);
+                ctx.moveTo(targetX, targetY - 18); ctx.lineTo(targetX, targetY + 18);
+                ctx.stroke();
+            }
+        }
 
-            // Qapı torları
-            ctx.fillStyle = "rgba(255,255,255,0.3)";
-            ctx.fillRect(2, 180, 8, 140);
-            ctx.fillRect(790, 180, 8, 140);
+        function drawKeeper() {
+            // Qapıçı (Formalı)
+            ctx.fillStyle = "#f97316";
+            ctx.fillRect(keeper.x, keeper.y, keeper.w, keeper.h);
+            ctx.strokeStyle = "#000";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(keeper.x, keeper.y, keeper.w, keeper.h);
+
+            // Əlcəklər
+            ctx.fillStyle = "#fff";
+            ctx.fillRect(keeper.x - 8, keeper.y, 8, 15);
+            ctx.fillRect(keeper.x + keeper.w, keeper.y, 8, 15);
         }
 
         function drawBall() {
             ctx.save();
             ctx.translate(ball.x, ball.y);
-            ctx.rotate(ball.angle);
+            let currentRadius = ball.radius * ball.scale;
 
-            // Ağ top
+            // Topun Kölgəsi
             ctx.beginPath();
-            ctx.arc(0, 0, ball.r, 0, Math.PI * 2);
+            ctx.ellipse(0, currentRadius * 0.8, currentRadius, currentRadius * 0.3, 0, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(0,0,0,0.3)";
+            ctx.fill();
+
+            // Ağ Top Gövdəsi
+            ctx.beginPath();
+            ctx.arc(0, 0, currentRadius, 0, Math.PI * 2);
             ctx.fillStyle = "#ffffff";
             ctx.fill();
             ctx.strokeStyle = "#000";
-            ctx.lineWidth = 1.5;
+            ctx.lineWidth = 2;
             ctx.stroke();
 
-            // Futbol topunun xanalari (Naxış)
+            // Topun Üzərindəki Klassik Xanalar
             ctx.fillStyle = "#000";
-            for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.arc(0, 0, currentRadius * 0.35, 0, Math.PI * 2);
+            ctx.fill();
+
+            for (let i = 0; i < 5; i++) {
+                let ang = (i * Math.PI * 2) / 5;
                 ctx.beginPath();
-                ctx.arc(Math.cos(i * 2) * 3, Math.sin(i * 2) * 3, 2.5, 0, Math.PI * 2);
+                ctx.arc(Math.cos(ang) * (currentRadius * 0.65), Math.sin(ang) * (currentRadius * 0.65), currentRadius * 0.2, 0, Math.PI * 2);
                 ctx.fill();
             }
+
             ctx.restore();
         }
 
-        function drawPlayers() {
-            players.forEach(p => {
-                // Seçilən oyunçunun ox işarəsi
-                if (p.isPlayer) {
-                    ctx.beginPath();
-                    ctx.arc(p.x, p.y, p.radius + 6, 0, Math.PI * 2);
-                    ctx.strokeStyle = "#ffeb3b";
-                    ctx.lineWidth = 3;
-                    ctx.stroke();
-
-                    // Üstündəki ox
-                    ctx.fillStyle = "#ffeb3b";
-                    ctx.beginPath();
-                    ctx.moveTo(p.x, p.y - 22);
-                    ctx.lineTo(p.x - 6, p.y - 30);
-                    ctx.lineTo(p.x + 6, p.y - 30);
-                    ctx.fill();
-                }
-
-                // Oyunçu Gövdəsi
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                ctx.fillStyle = p.color;
-                ctx.fill();
-                ctx.strokeStyle = "#000";
-                ctx.lineWidth = 2;
-                ctx.stroke();
-
-                // Forma Nömrəsi
-                ctx.fillStyle = (p.color === "#ffffff") ? "#000" : "#fff";
-                ctx.font = "bold 11px Arial";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText(p.num, p.x, p.y);
-            });
-        }
-
-        function draw() {
-            drawPitch();
-            drawPlayers();
-            drawBall();
-        }
-
-        function gameLoop() {
+        function loop() {
             update();
-            draw();
-            if (isPlaying) requestAnimationFrame(gameLoop);
+            drawPitch();
+            drawKeeper();
+            drawBall();
+            requestAnimationFrame(loop);
         }
+
+        loop();
     </script>
 </body>
 </html>
